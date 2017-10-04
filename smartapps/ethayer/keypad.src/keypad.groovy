@@ -1,4 +1,6 @@
 /** 
+Oct 03, 2017 in routine alarmStatusHandler only issue setArmedNight for Xfinity 3400, not available on Iris
+Sep 28, 2017 in routine alarmStatusHandler ignore changes issued by this module to improve performance and reduce overhead
 Sep 21, 2017 In execRoutine when armMode is night, use stay on AlarmSystemStatus event, corrects invalid AlarmState issue
 Sep 20, 2017 when setDefaultAlarm is false, insure there is a user routine code for all options
 		 add submitOnchange to some fields to do dynamic editing.	
@@ -169,7 +171,11 @@ def mainPage() {
 }
 
 def alarmStatusHandler(event) {
-  debugger("Keypad manager caught alarm status change: ${event.value}")
+  debugger("Keypad manager caught alarm status change: ${event.value} data: ${event.data}")
+  if (event.data=="keypad")
+  	{
+//  	log.debug "Ignoring our alarm change to ${event.value}"
+  	return false}
   if (runDefaultAlarm && event.value == 'off'){
     keypad?.setDisarmed()
   }
@@ -179,7 +185,7 @@ def alarmStatusHandler(event) {
   else if (runDefaultAlarm && event.value == 'stay')
   	{
   	def theMode=location.currentMode;
-  	if (theMode=="Night")
+  	if (theMode=="Night" && keypad?.getModelName()=="3400" && keypad?.getManufacturerName()=="CentraLite")
       		{keypad?.setArmedNight()}
   	else
     		{keypad?.setArmedStay()}
@@ -267,7 +273,8 @@ def execRoutine(aMap) {
 	  name:'alarmSystemStatus',
 	  value: armMode_event,
 	  displayed: true,
-	  description: "System Status is ${armMode}"
+	  description: "System Status is ${armMode}",
+	  data: "keypad"
 	]
 	debugger("Event: ${event}")
 	sendLocationEvent(event)
